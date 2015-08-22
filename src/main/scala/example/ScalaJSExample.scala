@@ -42,13 +42,13 @@ object ScalaJSExample {
     val fullAngle = 4 * math.Pi
     val interval = math.Pi / 4.5
 
-    val startSize = 20
+    val startSize = 19
     val startAngle = math.Pi * 0.05
 
-    val segmentGap = startSize/4
-    val radialGap = startSize/4
+    val segmentGap = startSize/2.5
+    val radialGap = startSize/8
 
-    val thicknessRatio = 1.8
+    val thicknessRatio = 2.0
     val shearRatio = 0.2
 
     val intervalGrowth = math.pow(thicknessRatio, interval / math.Pi / 2 )
@@ -58,6 +58,8 @@ object ScalaJSExample {
     val darkRed = 160
     val brightRed = 255
 
+    def greyColor(c: Int) = s"rgb(${c/4}, ${c/4}, ${c/4})"
+    def redColor(c: Int) = s"rgb($c, 0, 0)"
     def pointsFor(i: Int) = {
       val radius = startSize * math.pow(intervalGrowth, i)
       val angle = interval * -i + startAngle
@@ -79,7 +81,7 @@ object ScalaJSExample {
       val endColor = (avg - range).toInt
       (startColor, endColor)
     }
-    def draw(points: Point*) = {
+    def draw(color: Int => String, points: Point*) = {
       ctx.beginPath()
       val p1 = points(3)
       val p2 = points(2)
@@ -87,8 +89,8 @@ object ScalaJSExample {
       val gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y)
 
 
-      gradient.addColorStop(0, s"rgb($c1, 0, 0)")
-      gradient.addColorStop(1, s"rgb($c2, 0, 0)")
+      gradient.addColorStop(0, color(c1.toInt))
+      gradient.addColorStop(1, color(c2.toInt))
       ctx.fillStyle = gradient
       ctx.moveTo(points(0).x, points(0).y)
       for(p <- points.tail) ctx.lineTo(p.x, p.y)
@@ -97,9 +99,14 @@ object ScalaJSExample {
     }
     val turns = (fullAngle / interval).toInt
 
+    for (i <- 0 until turns - 1) {
+      val (p1, p2, p3, p4) = pointsFor(i)
+      val (p1x, p2x, p3x, p4x) = pointsFor(i+1)
+      draw(greyColor, p1x, p2, p3, p4x)
+    }
     for (i <- 0 until turns) {
       val (p1, p2, p3, p4) = pointsFor(i)
-      draw(p1, p2, p3, p4)
+      draw(redColor, p1, p2, p3, p4)
     }
 
     val spotRadius = startSize * 0.9 - radialGap
@@ -116,38 +123,46 @@ object ScalaJSExample {
     import scalatags.JsDom.svgTags._
     import scalatags.JsDom.styles.float
     val c = imageHeight / 2
+    def svgStripe(color: Int => String, p1: Point, p2: Point, p3: Point, p4: Point, i: Int) = {
+      val (c1, c2) = getGradient(p4, p3)
+      val ps = Seq(p1, p2, p3, p4)
+      val minX = ps.map(_.x).min
+      val minY = ps.map(_.y).min
+      val maxX = ps.map(_.x).max
+      val maxY = ps.map(_.y).max
+      def toPct(d: Double, min: Double, max: Double) = (d - min) / (max - min)
+      Seq(
+        "linearGradient".tag(implicitly)(
+          id := s"gradient$i",
+          x1 := toPct((p4.x + p1.x)/2, minX, maxX),
+          y1 := toPct((p4.y + p1.y)/2, minY, maxY),
+          x2 := toPct((p3.x + p2.x)/2, minX, maxX),
+          y2 := toPct((p3.y + p2.y)/2, minY, maxY),
+          stop(offset := "0", stopColor := color(c1)),
+          stop(offset := "1", stopColor := color(c2))
+        ),
+        polygon(
+          fill := s"url(#gradient$i)",
+          points := {
+            Seq(p1, p2, p3, p4).map{p => (p.x + c) + " " + (p.y + c)}
+              .mkString(", ")
+          }
+        )
+      )
+    }
     val svgContainer = svg(
       xmlns:="http://www.w3.org/2000/svg",
       width := imageHeight,
       height := imageHeight,
       float := "left",
+      for (i <- 0 until turns - 1) yield {
+        val (p1, p2, p3, p4) = pointsFor(i)
+        val (p1x, p2x, p3x, p4x) = pointsFor(i+1)
+        svgStripe(greyColor, p1x, p2, p3, p4x, i + 9999)
+      },
       for (i <- 0 until turns) yield {
         val (p1, p2, p3, p4) = pointsFor(i)
-        val (c1, c2) = getGradient(p4, p3)
-        val ps = Seq(p1, p2, p3, p4)
-        val minX = ps.map(_.x).min
-        val minY = ps.map(_.y).min
-        val maxX = ps.map(_.x).max
-        val maxY = ps.map(_.y).max
-        def toPct(d: Double, min: Double, max: Double) = (d - min) / (max - min)
-        Seq(
-          "linearGradient".tag(implicitly)(
-            id := s"gradient$i",
-            x1 := toPct((p4.x + p1.x)/2, minX, maxX),
-            y1 := toPct((p4.y + p1.y)/2, minY, maxY),
-            x2 := toPct((p3.x + p2.x)/2, minX, maxX),
-            y2 := toPct((p3.y + p2.y)/2, minY, maxY),
-            stop(offset := "0", stopColor := s"rgb($c1, 0, 0)"),
-            stop(offset := "1", stopColor := s"rgb($c2, 0, 0)")
-          ),
-          polygon(
-            fill := s"url(#gradient$i)",
-            points := {
-              Seq(p1, p2, p3, p4).map{p => (p.x + c) + " " + (p.y + c)}
-                .mkString(", ")
-            }
-          )
-        )
+        svgStripe(redColor, p1, p2, p3, p4, i)
       },
       "linearGradient".tag(implicitly)(
         id := s"gradientCircle",

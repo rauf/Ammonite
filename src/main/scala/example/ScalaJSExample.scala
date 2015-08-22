@@ -42,13 +42,13 @@ object ScalaJSExample {
     val fullAngle = 4 * math.Pi
     val interval = math.Pi / 4.5
 
-    val startSize = 19
-    val startAngle = math.Pi * 0.05
+    val startSize = 9.6
+    val startAngle = math.Pi * 0.2
 
-    val segmentGap = startSize/2.5
-    val radialGap = startSize/8
+    val segmentGap = startSize/1.5
+    val radialGap = startSize/6
 
-    val thicknessRatio = 2.0
+    val thicknessRatio = 2.5
     val shearRatio = 0.2
 
     val intervalGrowth = math.pow(thicknessRatio, interval / math.Pi / 2 )

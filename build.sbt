@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %%% "scalatags" % "0.5.2"
 )
 
-bootSnippet := "example.ScalaJSExample().main(document.getElementById('canvas'));"
+bootSnippet := "example.ScalaJSExample().main();"
 
 updateBrowsers <<= updateBrowsers.triggeredBy(fastOptJS in Compile)
 

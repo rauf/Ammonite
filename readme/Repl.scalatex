@@ -7,7 +7,7 @@
 @sect("Ammonite-REPL", "A Modernized Scala REPL")
 
   @p
-    Ammonite is a cleanroom re-implementation of the Scala REPL from first principles. It is much more featureful than the default REPL and comes with a lot of @sect.ref("Features", "ergonomic improvements") and @sect.ref("Configuration", "configurability") that may be familiar to people coming from IDEs or other REPLs such as @a("IPython", href:="http://ipython.org/") or @a("Zsh", href:="http://www.zsh.org/"). It can be combined with @sect.ref{Ammonite-Ops} to replace Bash as your systems shell, but also can be used alone as a @sect.ref("Features", "superior") version of the default Scala REPL, or as a @sect.ref("Debugging", "debugging tool").
+    Ammonite is a cleanroom re-implementation of the Scala REPL from first principles. It is much more featureful than the default REPL and comes with a lot of @sect.ref("Features", "ergonomic improvements") and @sect.ref("Configuration", "configurability") that may be familiar to people coming from IDEs or other REPLs such as @lnk("IPython", "https://ipython.org/") or @lnk("Zsh", "http://www.zsh.org/"). It can be combined with @sect.ref{Ammonite-Ops} to replace Bash as your systems shell, but also can be used alone as a @sect.ref("Features", "superior") version of the default Scala REPL, or as a @sect.ref("Debugging", "debugging tool").
 
   @p
     If you want to use Ammonite as a plain Scala shell, download the standalone executable:
@@ -35,7 +35,7 @@
   @hl.scala
     libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "@ammonite.Constants.version" % "test" cross CrossVersion.full
 
-    initialCommands in (Test, console) := """ammonite.repl.Repl.run("")"""
+    initialCommands in (Test, console) := """ammonite.repl.Main.run("")"""
 
   @p
     After that, simple hit
@@ -62,7 +62,7 @@
         Ammonite allows you to load artifacts directly from maven central by copy & pasting their SBT ivy-coordinate-snippet. In addition, you can also load in jars as @hl.scala{java.io.File}s to be included in the session or simple @hl.scala{String}s to be executed using the @hl.scala{load} command.
 
       @p
-        This makes Ammonite ideal for trying out new libraries or tools. You can pull down projects like @a("Scalaz", href:="https://github.com/scalaz/scalaz") or @a("Shapeless", href:="https://github.com/milessabin/shapeless") and immediately start working with them in the REPL:
+        This makes Ammonite ideal for trying out new libraries or tools. You can pull down projects like @lnk("Scalaz", "https://github.com/scalaz/scalaz") or @lnk("Shapeless", "https://github.com/milessabin/shapeless") and immediately start working with them in the REPL:
 
       @hl.ref(ammoniteTests/"ProjectTests.scala", Seq("scalaz", "@"), "\"\"\"")
 
@@ -80,7 +80,7 @@
       @hl.ref(advancedTests, Seq("'pprint", "@"), "\"\"\"")
 
       @p
-        Ammonite-REPL uses @a("PPrint", href:="http://lihaoyi.github.io/upickle-pprint/pprint/") to display its output by default. That means that everything is nicely formatted to fit within the width of the terminal, and is copy-paste-able!
+        Ammonite-REPL uses @lnk("PPrint", "https://lihaoyi.github.io/upickle-pprint/pprint/") to display its output by default. That means that everything is nicely formatted to fit within the width of the terminal, and is copy-paste-able!
 
       @p
         By default, Ammonite @sect.ref("Configurable Truncation", "truncates") the pretty-printed output to avoid flooding your terminal. If you want to disable truncation, call @hl.scala{show(...)} on your expression to pretty-print it's full output. You can also pass in an optional @hl.scala{height = ...} parameter to control how much you want to show before truncation.
@@ -295,7 +295,25 @@
 
     @p
       All types, values and imports defined in scripts are available to commands entered in REPL after loading the script.
+    @sect{Script Arguments}
+      @p
+        Often when calling a script from the external command- line (e.g. Bash), you need to pass arguments to configure its behavior. With Ammonite, this is done by defining a @hl.scala{main} method, e.g.
 
+      @hl.ref(wd/'integration/'src/'test/'resources/'ammonite/'integration/"Args.scala")
+
+      @p
+        When the script is run from the command line:
+      @hl.sh
+        ~/amm Args.scala 3 Moo
+      @p
+        The top-level definitions execute first (e.g. setting @hl.scala{x}), and then the @hl.scala{main} method is called with the arguments you passed in.
+      @p
+        Default arguments behave as you would expect (i.e. they allow you to omit it when calling) and arguments are parsed using the @hl.scala{scopt.Read} typeclass, which provides parsers for primitives like @code{Int}, @code{Double}, @code{String}, as well as basic data-structures like @code{Seq}s (taken as a comma-separated list) and common types like @sect.ref{Paths}.
+      @p
+        If you pass in the wrong number of arguments, or if an argument fails to deserialize, the script will fail with an exception.
+
+      @p
+        The @hl.scala{main} method does not get automatically called when you @hl.scala{load.module} or @hl.scala{load.exec} a script from @i{within} the Ammonite REPL. It gets imported into scope like any other method or value defined in the script, and you can just call it normally.
   @sect{Configuration}
     @p
       Ammonite is configured via Scala code, that can live in the @code{~/.ammonite/predef.scala} file, passed in through SBT's @hl.scala{initialCommands}, or passed to the command-line executable as @code{--predef='...'}.
@@ -346,14 +364,14 @@
       Note that unlike the snippet given @sect.ref("Ammonite", "above"), we leave out the @hl.scala{% "test"} because we may want ammonite to be available within the "main" project, and not just in the unit tests. Then, anywhere within your program, you can place a breakpoint via:
 
     @hl.scala
-      import ammonite.repl.Repl._
+      import ammonite.repl.Main._
       debug("name1" -> value1, "name2" -> value2, ...)
 
     @p
       And when your program reaches that point, it will pause and open up an Ammonite REPL with the values you provided it bound to the names you gave it. From there, you can interact with those values as normal Scala values within the REPL. Use @code{Ctrl-D} or @hl.scala{exit} to exit the REPL and continue normal program execution. Note that the names given must be plain Scala identifiers.
 
     @p
-      Here's an example of it being used to debug changes to the @a("WootJS webserver", href:="https://github.com/d6y/wootjs"):
+      Here's an example of it being used to debug changes to the @lnk("WootJS webserver", "https://github.com/d6y/wootjs"):
 
     @img(src:="Debugging.png", width:="100%")
     @p
@@ -394,7 +412,7 @@
         replServer.start()
 
       @p
-        And start your application. You will be able to connect to it using ssh like this: @hl.sh("ssh repl@localhost -p22222") and interact with your running app. Invoke @hl.scala{stop()} method whenever you want to shutdown ammonite sshd server. Here for example sshd repl server is embedded in the @a("Akka HTTP microservice example", href:="https://github.com/theiterators/akka-http-microservice"):
+        And start your application. You will be able to connect to it using ssh like this: @hl.sh("ssh repl@localhost -p22222") and interact with your running app. Invoke @hl.scala{stop()} method whenever you want to shutdown ammonite sshd server. Here for example sshd repl server is embedded in the @lnk("Akka HTTP microservice example", "https://github.com/theiterators/akka-http-microservice"):
 
       @img(src:="DebuggingViaSshd.png", width:="100%")
 

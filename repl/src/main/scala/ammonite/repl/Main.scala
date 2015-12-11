@@ -71,7 +71,7 @@ object Main{
             .Identifiers
             .Id
             .parse(k.stripPrefix("--"))
-            .isInstanceOf[fastparse.core.Result.Success[_]],
+            .isInstanceOf[fastparse.core.Parsed.Success[_]],
         s"""Only pairs of keyword arguments can come after `--`.
             |Invalid keyword: $k""".stripMargin
       )
@@ -225,7 +225,7 @@ object ScriptInit{
         case q"ammonite.repl.ScriptInit.arg($inner)" =>
 
           val newPrefix = q"ammonite.repl.ScriptInit.parseScriptArg"
-          q"$newPrefix[${param.info}](${param.name.decoded}, $inner)"
+          q"$newPrefix[${param.typeSignature}](${param.name.decoded}, $inner)"
         case x => x // This case should only be for default args, which we leave unchanged
       }
       assign
@@ -236,5 +236,5 @@ object ScriptInit{
   /**
     * Additional [[scopt.Read]] instance to teach it how to read Ammonite paths
     */
-  implicit def pathRead = scopt.Read.stringRead.map(Path(_))
+  implicit def pathRead: scopt.Read[Path] = scopt.Read.stringRead.map(Path(_))
 }

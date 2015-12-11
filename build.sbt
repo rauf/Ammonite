@@ -4,7 +4,7 @@ import sbtassembly.AssemblyPlugin.defaultShellScript
 scalaVersion := "2.11.6"
 
 crossScalaVersions := Seq(
-  "2.10.3", "2.10.4", "2.10.5", "2.11.3", "2.11.4", "2.11.5", "2.11.6", "2.11.7"
+  "2.10.3", "2.10.4", "2.10.5", "2.10.6", "2.11.3", "2.11.4", "2.11.5", "2.11.6", "2.11.7"
 )
 
 val dontPublishSettings = Seq(
@@ -108,7 +108,7 @@ lazy val repl = project
       "jline" % "jline" % "2.12",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.apache.ivy" % "ivy" % "2.4.0",
-      "com.lihaoyi" %% "scalaparse" % "0.3.2",
+      "com.lihaoyi" %% "scalaparse" % "0.3.3",
       "com.lihaoyi" %% "upickle" % "0.3.6",
       "com.lihaoyi" %% "pprint" % "0.3.6",
       "com.github.scopt" %% "scopt" % "3.3.0"
@@ -189,6 +189,10 @@ lazy val integration = project
       assembly in repl,
       packageBin in (shell, Compile)
     ),
+    (console in Test) <<= (console in Test).dependsOn(
+      assembly in repl,
+      packageBin in (shell, Compile)
+    ),
     dontPublishSettings,
     initialCommands in (Test, console) := "ammonite.integration.Main.main(null)"
   )
@@ -224,8 +228,26 @@ lazy val readme = ScalatexReadme(
   scalaVersion := "2.11.7",
   (run in Compile) <<= (run in Compile).dependsOn(
     assembly in repl,
-    packageBin in (shell, Compile)
+    packageBin in (shell, Compile),
+    doc in (ops, Compile),
+    doc in (terminal, Compile),
+    doc in (repl, Compile),
+    doc in (sshd, Compile),
+    doc in (shell, Compile)
   ),
+  (run in Compile) <<= (run in Compile).dependsOn(Def.task{
+    val apiFolder = (target in Compile).value/"scalatex"/"api"
+    val copies = Seq(
+      (doc in (ops, Compile)).value -> "ops",
+      (doc in (terminal, Compile)).value -> "terminal",
+      (doc in (repl, Compile)).value -> "repl",
+      (doc in (sshd, Compile)).value -> "sshd",
+      (doc in (shell, Compile)).value -> "shell"
+    )
+    for ((folder, name) <- copies){
+      sbt.IO.copyDirectory(folder, apiFolder/name, overwrite = true)
+    }
+  }),
   (unmanagedSources in Compile) += baseDirectory.value/".."/"project"/"Constants.scala"
 )
 

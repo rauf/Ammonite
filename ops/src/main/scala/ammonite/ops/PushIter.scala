@@ -18,13 +18,21 @@ trait PushIter[+T]{
 
   def hasDefiniteSize = false
 
+  // Appends
   def ++[B >: T](xs: PushIter[B]) = new PushIter.Append[B](this, xs)
+  def :+[B >: T](xs: B) = new PushIter.Append[B](this, PushIter(xs))
+  def ++:[B >: T](xs: PushIter[B]) = new PushIter.Append[B](xs, this)
+  def +:[B >: T](xs: B) = new PushIter.Append[B](PushIter(xs), this)
 
+  // Transformations
   def foreach(f: T => Unit) = iterate{ t => f(t); true}
   def map[B](f: T => B) = new PushIter.Mapped(this, f)
-  def flatMap[B](f: T => PushIter[B]) = new PushIter.FlatMapped(this, f)
   def filter(p: T => Boolean) = new Filtered(this, p)
+  def flatMap[B](f: T => PushIter[B]) = new PushIter.FlatMapped(this, f)
+  def collect[V](p: PartialFunction[T, V]) = this.filter(p.isDefinedAt).map(p)
+  def flatten[B](f: T => PushIter[B]) = ???
 
+  // Splices
   def take(n: Int): PushIter[T] = new PushIter.Take(this, n)
   def drop(n: Int): PushIter[T] = new PushIter.Drop(this, n)
   def slice(from: Int, until: Int) = this.drop(from).take(until - from)
@@ -32,6 +40,30 @@ trait PushIter[+T]{
   def takeWhile(p: T => Boolean) = new PushIter.TakeWhile(this, p)
   def dropWhile(p: T => Boolean) = new PushIter.DropWhile(this, p)
 
+  // Terminals
+  def foldLeft[B](start: B)(f: (B, T) => B) = {
+    var current = start
+    this.foreach{x => current = f(current, x) }
+    current
+  }
+
+  def size = this.foldLeft(0)((l, _) => l + 1)
+
+  // Boolean Predicates
+  def forall(f: T => Boolean) = !exists(!f(_))
+  def exists(f: T => Boolean) = this.filter(f).size > 0
+  def contains[A1 >: T](f: A1) = this.exists(_ == f)
+
+  // Selecting individual items
+  def headOption = this.take(1).foldLeft(None: Option[T])((_, x) => Some(x))
+  def head = headOption.get
+  def lastOption = this.foldLeft(None: Option[T])((_, t) => Some(t))
+  def last = lastOption.get
+  def find(f: T => Boolean) = this.filter(f).foldLeft(None: Option[T])((_, t) => Some(t))
+
+  // Indexing
+  def indexWhere(f: T => Boolean, from: Int) = this.drop(from).dropWhile(f).size
+  def indexOf[V >: T](elem: V, from: Int) = this.indexWhere(_ == elem, from)
 }
 object PushIter{
 

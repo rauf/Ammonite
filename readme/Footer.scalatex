@@ -58,6 +58,8 @@
           @hl.scala{cp} and @hl.scala{mv} now have @hl.scala{.into} and @hl.scala{.over} modes #206
         @li
           Wrapping content is automatically shifted onto a new line, to avoid problems when copying and pasting #205
+        @li
+          @hl.scala{lastException} is now available within the REPL, allowing access the exception object (e.g. to extract additional metadata) or to display the stack-trace of exceptions that aren't printed (e.g. to show the stack trace of the @hl.scala{ThreadDeath} caused by a @code{Ctrl-C})
 
     @sect{0.5.4}
       @ul

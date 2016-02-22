@@ -35,6 +35,9 @@
   @p
     That handles the common case for you: recursively deleting folders, not-failing if the file doesn't exist, etc.
 
+  @p
+    Note: while @sect.ref{Ammonite-REPL} does not currently support Windows, Ammonite-Ops currently does experimentally! Thus even if the REPL does not work feel free to use Ammonite-Ops within your scripts or programs.
+
   @sect{Paths}
     @p
       Ammonite uses strongly-typed data-structures to represent filesystem paths. The two basic versions are:
